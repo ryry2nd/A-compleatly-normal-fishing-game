@@ -1,21 +1,21 @@
 #pragma once
 
-#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <cmath>
-#include "Shader.h"
-#include "Image.h"
+#include <memory>
+#include "compatibility/Backend.hpp"
+#include "compatibility/opengl/OpenGlBackend.hpp"
+#include "compatibility/HelperFunctions.hpp"
 #include "Camera.hpp"
-#include "BigVec.hpp"
+#include "customMath/BigVec.hpp"
 
 class RenderObject
 {
 public:
-    RenderObject(Shader *shady, Image *im, Camera *cam);
-    RenderObject(Shader *shady, Image *im, Camera *cam, BigVec3 pos, glm::vec3 rot, glm::vec3 scl);
+    RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, BigVec3 pos = BigVec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scl = glm::vec3(1.0f));
     ~RenderObject();
 
     void Update(float deltaTime);
@@ -29,15 +29,14 @@ public:
     float near = 0.1f;
     float far = 10000.0f;
 
-    RenderObject *parent;
+    RenderObject *parent = nullptr;
 
 private:
-    GLuint VAO, VBO;
+    Backend *backend;
     Shader *shader;
     Image *image;
     Camera *camera;
     void setupObject();
-    void updateVerts();
     float nearCullFunction() const;
     glm::mat4 getModelMatrix() const;
     std::vector<float> vertices;

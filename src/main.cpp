@@ -1,12 +1,13 @@
 #include <SDL2/SDL.h>
-#include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "engine/RenderObject.h"
-#include "engine/Shader.h"
-#include "engine/Image.h"
+#include "engine/compatibility/HelperFunctions.hpp"
 #include "engine/Camera.hpp"
+#include "engine/compatibility/opengl/OpenGlBackend.hpp"
+#include "engine/compatibility/opengl/HelperFunctionsOpengl.hpp"
 #include <string>
+#include <memory>
 
 int main(int argc, char *argv[])
 {
@@ -17,11 +18,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // this does what it says
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
     // this makes the window
     const glm::vec2 RES{800, 600};
     SDL_Window *window = SDL_CreateWindow("Game", 100, 100, RES.x, RES.y, SDL_WINDOW_OPENGL);
@@ -31,36 +27,7 @@ int main(int argc, char *argv[])
         SDL_Quit();
         return 1;
     }
-
-    // this makes the opengl content
-    SDL_GLContext glContext = SDL_GL_CreateContext(window);
-    if (!glContext)
-    {
-        std::cerr << "SDL_GL_CreateContext Error: " << SDL_GetError() << "\n";
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK)
-    {
-        std::cerr << "Failed to initialize GLEW\n";
-        SDL_GL_DeleteContext(glContext);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    // this turns on all the cool opengl settings that probably should be the default
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_MULTISAMPLE);
-    glEnable(GL_STENCIL_TEST);
+    HelperFunctions *renderingEngine = new HelperFunctionsOpenGl(window);
 
     SDL_SetRelativeMouseMode(SDL_TRUE); // hides the mouse
 
@@ -85,17 +52,15 @@ int main(int argc, char *argv[])
     float speed = 10;
 
     // this sets up the shader and texture
-    Shader *shader = new Shader("assets/shaders/cubeVertex.glsl", "assets/shaders/cubeFragment.glsl");
-    Image *image = new Image("assets/textures/FISH.png");
+    Shader *shader = new ShaderOpenGl("assets/shaders/cubeVertex.glsl", "assets/shaders/cubeFragment.glsl");
+    Image *image = new ImageOpenGl("assets/textures/FISH.png");
 
     // makes the cubes
-    RenderObject cube(shader, image, &camera);
+    RenderObject cube(new OpenGlBackend(), shader, image, &camera);
     cube.position.x += Bigint(pos);
-
     renderObjects.push_back(&cube);
 
-    RenderObject cube2(shader, image, &camera);
-
+    RenderObject cube2(new OpenGlBackend(), shader, image, &camera);
     renderObjects.push_back(&cube2);
 
     // starts running the game loop
@@ -186,8 +151,7 @@ int main(int argc, char *argv[])
         }
 
         // clear background
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        renderingEngine->clearBackground();
 
         // draw all objects
         for (i = 0; i < renderObjects.size(); i++)
@@ -196,14 +160,12 @@ int main(int argc, char *argv[])
         }
 
         // swap buffer
-        SDL_GL_SwapWindow(window);
+        renderingEngine->swapBuffer();
     }
 
     // delete everything
     delete shader;
     delete image;
-    SDL_GL_DeleteContext(glContext);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    delete renderingEngine;
     return 0;
 }

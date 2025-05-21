@@ -45,45 +45,23 @@ std::vector<float> makeTexturedCube(float size = 1.0f)
     return verts;
 }
 
-RenderObject::RenderObject(Shader *shady, Image *im, Camera *cam)
-    : position(0.0f), rotation(0.0f), scale(1.0f), shader(shady), image(im), camera(cam)
-{
-
-    vertices = makeTexturedCube();
-    setupObject();
-}
-
-RenderObject::RenderObject(Shader *shady, Image *im, Camera *cam, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
+RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
     : position(pos), rotation(rot), scale(scl), shader(shady), image(im), camera(cam)
 {
+    this->backend = backend;
+
     vertices = makeTexturedCube();
     setupObject();
 }
 
 RenderObject::~RenderObject()
 {
-    if (VAO != 0)
-        glDeleteVertexArrays(1, &VAO);
-    if (VBO != 0)
-        glDeleteBuffers(1, &VBO);
+    delete backend;
 }
 
 void RenderObject::setupObject()
 {
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-
-    // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-    glEnableVertexAttribArray(0);
-
-    // Texture coord attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    backend->setupObject(vertices);
 }
 
 glm::mat4 RenderObject::getModelMatrix() const
@@ -104,13 +82,6 @@ glm::mat4 RenderObject::getModelMatrix() const
     return model;
 }
 
-void RenderObject::updateVerts()
-{
-    // updates the vertices (you dont need to run this unless you changed the vertices)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), vertices.data());
-}
-
 // I just made the default update to rotate all around
 void RenderObject::Update(float deltaTime)
 {
@@ -127,32 +98,14 @@ float RenderObject::nearCullFunction() const
 
 void RenderObject::Draw()
 {
-    // it gets those camera values
+    // it gets those camera values and then the mvp
     glm::mat4 viewProj = camera->getProjectionMatrix(near, far);
     glm::mat4 viewMatrix = camera->getViewMatrix();
-
-    // it gets and applies the shader
-    glUseProgram(shader->getShader());
-
-    // this puts in all them camera matrix stuff and where the model is
     glm::mat4 mvp = viewProj * viewMatrix * getModelMatrix();
-    GLuint mvpLoc = glGetUniformLocation(shader->getShader(), "uMVP");
-    if (mvpLoc != -1)
-        glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, &mvp[0][0]);
 
-    // this puts in whatever value that culls whats close to the camera
-    GLint location = glGetUniformLocation(shader->getShader(), "u_CullRadius");
-    glUniform1f(location, nearCullFunction());
-
-    // it applies the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, image->getID());
-
-    GLuint texLoc = glGetUniformLocation(image->getID(), "texture1");
-    if (texLoc != -1)
-        glUniform1i(texLoc, 0);
-
-    glBindVertexArray(VAO); // ngl who knows what this crap means, according to the names it applies and binds stuff
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
+    backend->includeShader(shader);
+    backend->includeMvp(mvp);
+    backend->includeFloat("u_CullRadius", nearCullFunction());
+    backend->includeTexture(image);
+    backend->finalizeShaders(vertices);
 }
