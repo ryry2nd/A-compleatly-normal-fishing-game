@@ -6,9 +6,8 @@
 #include <vector>
 #include <cmath>
 #include <memory>
-#include "compatibility/Backend.hpp"
-#include "compatibility/opengl/OpenGlBackend.hpp"
-#include "compatibility/HelperFunctions.hpp"
+#include "Backend.hpp"
+#include "HelperFunctions.hpp"
 #include "Camera.hpp"
 #include "customMath/BigVec.hpp"
 

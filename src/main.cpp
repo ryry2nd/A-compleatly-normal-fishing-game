@@ -2,10 +2,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "engine/RenderObject.h"
-#include "engine/compatibility/HelperFunctions.hpp"
+#include "engine/HelperFunctions.hpp"
 #include "engine/Camera.hpp"
-#include "engine/compatibility/opengl/OpenGlBackend.hpp"
-#include "engine/compatibility/opengl/HelperFunctionsOpengl.hpp"
+#include "engine/opengl/OpenGlBackend.hpp"
+#include "engine/opengl/HelperFunctionsOpengl.hpp"
 #include <string>
 #include <memory>
 
