@@ -63,6 +63,10 @@ int main(int argc, char *argv[])
     RenderObject cube2(new OpenGlBackend(), shader, image, &camera);
     renderObjects.push_back(&cube2);
 
+    RenderObject cube3(new OpenGlBackend(), shader, image, &camera, glm::vec3(1.0f), 1.0f);
+    renderObjects.push_back(&cube3);
+    cube3.position.x += Bigint("100");
+
     // starts running the game loop
     bool running = true;
     Uint32 lastTicks = SDL_GetTicks();

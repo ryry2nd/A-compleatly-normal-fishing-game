@@ -11,10 +11,17 @@
 #include "Camera.hpp"
 #include "customMath/BigVec.hpp"
 
+struct Light
+{
+    BigVec3 &position;
+    glm::vec3 color;
+    float intensity;
+};
+
 class RenderObject
 {
 public:
-    RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, BigVec3 pos = BigVec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scl = glm::vec3(1.0f));
+    RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor = glm::vec3(0, 0, 0), float emissionIntensity = 0.0f, BigVec3 pos = BigVec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scl = glm::vec3(1.0f));
     ~RenderObject();
 
     void Update(float deltaTime);
@@ -28,15 +35,20 @@ public:
     float near = 0.1f;
     float far = 10000.0f;
 
+protected:
+    void addVarsToShader();
     RenderObject *parent = nullptr;
+    void setupObject();
+    float nearCullFunction() const;
+    glm::mat4 getModelMatrix() const;
 
 private:
     Backend *backend;
     Shader *shader;
     Image *image;
     Camera *camera;
-    void setupObject();
-    float nearCullFunction() const;
-    glm::mat4 getModelMatrix() const;
+    Light *thisLight = nullptr;
     std::vector<float> vertices;
+
+    static std::vector<Light *> allLights;
 };

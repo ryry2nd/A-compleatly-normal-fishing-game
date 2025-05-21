@@ -13,8 +13,7 @@ struct BigVec3
 
     BigVec3(glm::vec3 vec) : x(Bigint(vec.x)), y(Bigint(vec.y)), z(Bigint(vec.z)) {}
 
-    BigVec3
-    operator+(const BigVec3 &other) const
+    BigVec3 operator+(const BigVec3 &other) const
     {
         return BigVec3(x + other.x, y + other.y, z + other.z);
     }
@@ -40,6 +39,14 @@ struct BigVec3
             x.toFloat(),
             y.toFloat(),
             z.toFloat());
+    }
+
+    glm::dvec3 toDoubleVec3() const
+    {
+        return glm::dvec3(
+            x.toDouble(),
+            y.toDouble(),
+            z.toDouble());
     }
 };
 
@@ -79,5 +86,12 @@ struct BigVec2
         return glm::vec2(
             x.toFloat(),
             y.toFloat());
+    }
+
+    glm::dvec2 toDoubleVec3() const
+    {
+        return glm::dvec2(
+            x.toDouble(),
+            y.toDouble());
     }
 };

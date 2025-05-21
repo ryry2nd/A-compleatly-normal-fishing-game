@@ -13,15 +13,27 @@ void addFace(std::vector<float> &verts,
     glm::vec2 uv2 = {uvMax.x, uvMin.y}; // top-right
     glm::vec2 uv3 = {uvMin.x, uvMin.y}; // top-left
 
+    // normals
+    glm::vec3 edge1 = vert1 - vert0;
+    glm::vec3 edge2 = vert2 - vert0;
+    glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
+
+    auto add = [&](glm::vec3 pos, glm::vec2 uv)
+    {
+        verts.insert(verts.end(), {pos.x, pos.y, pos.z,
+                                   uv.x, uv.y,
+                                   normal.x, normal.y, normal.z});
+    };
+
     // Triangle 1
-    verts.insert(verts.end(), {vert0.x, vert0.y, vert0.z, uv0.x, uv0.y});
-    verts.insert(verts.end(), {vert1.x, vert1.y, vert1.z, uv1.x, uv1.y});
-    verts.insert(verts.end(), {vert2.x, vert2.y, vert2.z, uv2.x, uv2.y});
+    add(vert0, uv0);
+    add(vert1, uv1);
+    add(vert2, uv2);
 
     // Triangle 2
-    verts.insert(verts.end(), {vert2.x, vert2.y, vert2.z, uv2.x, uv2.y});
-    verts.insert(verts.end(), {vert3.x, vert3.y, vert3.z, uv3.x, uv3.y});
-    verts.insert(verts.end(), {vert0.x, vert0.y, vert0.z, uv0.x, uv0.y});
+    add(vert2, uv2);
+    add(vert3, uv3);
+    add(vert0, uv0);
 }
 
 std::vector<float> makeTexturedCube(float size = 1.0f)
@@ -45,10 +57,17 @@ std::vector<float> makeTexturedCube(float size = 1.0f)
     return verts;
 }
 
-RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
+std::vector<Light *> RenderObject::allLights;
+
+RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor, float emissionIntensity, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
     : position(pos), rotation(rot), scale(scl), shader(shady), image(im), camera(cam)
 {
     this->backend = backend;
+    if (emissionIntensity != 0.0f)
+    {
+        thisLight = new Light{position, emissionColor, emissionIntensity};
+        allLights.push_back(thisLight);
+    }
 
     vertices = makeTexturedCube();
     setupObject();
@@ -57,6 +76,11 @@ RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *c
 RenderObject::~RenderObject()
 {
     delete backend;
+    if (thisLight != nullptr)
+    {
+        allLights.erase(std::find(allLights.begin(), allLights.end(), thisLight));
+        delete thisLight;
+    }
 }
 
 void RenderObject::setupObject()
@@ -96,16 +120,40 @@ float RenderObject::nearCullFunction() const
     return near <= 0.1f ? 0.0f : 100.0f;
 }
 
+void RenderObject::addVarsToShader()
+{
+    backend->includeMat4("uModel", getModelMatrix());
+    backend->includeMat4("uView", camera->getViewMatrix());
+    backend->includeMat4("uProjection", camera->getProjectionMatrix(near, far));
+    backend->includeFloat("u_CullRadius", nearCullFunction());
+
+    if (thisLight != nullptr)
+    {
+        backend->includeTripleFloat("emissionColor", thisLight->color.x, thisLight->color.y, thisLight->color.z);
+        backend->includeFloat("emissionIntensity", thisLight->intensity);
+    }
+    else
+    {
+        backend->includeTripleFloat("emissionColor", 0.0f, 0.0f, 0.0f);
+        backend->includeFloat("emissionIntensity", 0.0f);
+    }
+
+    backend->includeInt("numLights", allLights.size());
+    int i = 0;
+    for (const Light *l : allLights)
+    {
+        glm::dvec3 lightPos = glm::normalize((l->position - position).toDoubleVec3());
+        backend->includeTripleFloat("lightPositions[" + std::to_string(i) + "]", lightPos.x, lightPos.y, lightPos.z);
+        backend->includeTripleFloat("lightColors[" + std::to_string(i) + "]", l->color.x, l->color.y, l->color.z);
+        backend->includeFloat("lightIntensities[" + std::to_string(i) + "]", l->intensity);
+        i++;
+    }
+}
+
 void RenderObject::Draw()
 {
-    // it gets those camera values and then the mvp
-    glm::mat4 viewProj = camera->getProjectionMatrix(near, far);
-    glm::mat4 viewMatrix = camera->getViewMatrix();
-    glm::mat4 mvp = viewProj * viewMatrix * getModelMatrix();
-
     backend->includeShader(shader);
-    backend->includeMvp(mvp);
-    backend->includeFloat("u_CullRadius", nearCullFunction());
+    addVarsToShader();
     backend->includeTexture(image);
     backend->finalizeShaders(vertices);
 }

@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 class OpenGlBackend : public Backend
 {
@@ -29,12 +30,16 @@ public:
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
         // Position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
         glEnableVertexAttribArray(0);
 
         // Texture coord attribute
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
+
+        // Normal attribute
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(5 * sizeof(float)));
+        glEnableVertexAttribArray(2);
     }
 
     void updateVerts(const std::vector<float> &vertices)
@@ -49,12 +54,12 @@ public:
         this->shader = shader;
         glUseProgram(shader->getShader());
     }
-    void includeMvp(glm::mat4 &mvp)
+
+    void includeMat4(const std::string &name, const glm::mat4 &mat)
     {
-        GLuint mvpLoc = glGetUniformLocation(shader->getShader(), "uMVP");
-        if (mvpLoc != -1)
-            glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, &mvp[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(shader->getShader(), name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
     }
+
     void includeTexture(Image *image)
     {
         glActiveTexture(GL_TEXTURE0);
@@ -64,9 +69,20 @@ public:
         if (texLoc != -1)
             glUniform1i(texLoc, 0);
     }
-    void includeFloat(std::string location, float f)
+
+    void includeFloat(const std::string &location, const float f)
     {
         glUniform1f(glGetUniformLocation(shader->getShader(), location.c_str()), f);
+    }
+
+    void includeTripleFloat(const std::string &location, const float f1, const float f2, const float f3)
+    {
+        glUniform3f(glGetUniformLocation(shader->getShader(), location.c_str()), f1, f2, f3);
+    }
+
+    void includeInt(const std::string &location, const int i)
+    {
+        glUniform1i(glGetUniformLocation(shader->getShader(), location.c_str()), i);
     }
 
     void finalizeShaders(const std::vector<float> &vertices)

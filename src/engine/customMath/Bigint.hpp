@@ -204,6 +204,12 @@ public:
         return (isNegative ? -1.0f : 1.0f) * (base + static_cast<float>(decimalPart));
     }
 
+    double toDouble() const
+    {
+        double base = data.empty() ? 0.0 : static_cast<double>(data.back());
+        return (isNegative ? -1.0 : 1.0) * (base + decimalPart);
+    }
+
 private:
     static std::vector<uint64_t> addVectors(const std::vector<uint64_t> &a, const std::vector<uint64_t> &b, uint64_t carryIn)
     {
