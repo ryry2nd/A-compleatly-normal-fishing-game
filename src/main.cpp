@@ -66,10 +66,10 @@ int main(int argc, char *argv[])
     cube2.position.x -= Bigint(10);
     renderObjects.push_back(&cube2);
 
-    RenderObject cube3(new OpenGlBackend(), shader, image, &camera, glm::vec3(1.0f), 1.0f);
+    RenderObject cube3(new OpenGlBackend(), shader, image, &camera, glm::vec3(1.0f), 10.0f);
     renderObjects.push_back(&cube3);
     cube3.position.x += Bigint(pos);
-    cube3.position.x += Bigint("100");
+    cube3.position.x += Bigint("10");
 
     // starts running the game loop
     bool running = true;

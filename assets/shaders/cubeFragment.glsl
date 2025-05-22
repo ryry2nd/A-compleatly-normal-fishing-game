@@ -17,6 +17,9 @@ uniform vec3 lightPositions[MAX_LIGHTS];
 uniform vec3 lightColors[MAX_LIGHTS];
 uniform float lightIntensities[MAX_LIGHTS];
 
+uniform float gamma;
+uniform float ambientLight;
+
 void main()
 {
     if (length(FragPos) < u_CullRadius) discard;
@@ -25,7 +28,7 @@ void main()
     vec3 viewDir = normalize(-FragPos);
     vec3 lighting = vec3(0.0);
 
-    // Directional Light (sunlight)
+    // Directional Light
     for (int i = 0; i < numLights; i++)
     {
         vec3 lightDir = normalize(-lightPositions[i]);
@@ -45,6 +48,7 @@ void main()
     }
 
     vec3 texColor = texture(texture1, TexCoord).rgb;
-    vec3 finalColor = lighting * texColor + emissionColor * emissionIntensity;
-    FragColor = vec4(finalColor, 1.0);
+    vec3 finalColor = (lighting + ambientLight) * texColor + emissionColor * emissionIntensity;
+    
+    FragColor = vec4(pow(finalColor, vec3(1.0 / gamma)), 1.0);
 }

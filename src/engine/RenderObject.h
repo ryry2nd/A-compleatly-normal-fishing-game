@@ -38,12 +38,16 @@ public:
     float near = 0.1f;
     float far = 10000.0f;
 
+    static float gamma;
+
 protected:
-    void addVarsToShader();
+    void
+    addVarsToShader();
     RenderObject *parent = nullptr;
     void setupObject();
     float nearCullFunction() const;
     glm::mat4 getModelMatrix() const;
+    BigVec3 tempLocalPosition;
 
 private:
     Backend *backend;
@@ -52,6 +56,7 @@ private:
     Camera *camera;
     Light *thisLight = nullptr;
     std::vector<float> vertices;
+    float calculateInverseSquareLaw(float intensity) const;
 
     static std::vector<Light *> allLights;
 };

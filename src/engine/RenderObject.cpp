@@ -58,9 +58,10 @@ std::vector<float> makeTexturedCube(float size = 1.0f)
 }
 
 std::vector<Light *> RenderObject::allLights;
+float RenderObject::gamma = 2.2f;
 
 RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor, float emissionIntensity, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
-    : position(pos), rotation(rot), scale(scl), shader(shady), image(im), camera(cam), velocity(BigVec3(Bigint(0), Bigint(0), Bigint(0))), acceleration(BigVec3(Bigint(0), Bigint(0), Bigint(0)))
+    : position(pos), rotation(rot), scale(scl), shader(shady), image(im), camera(cam), velocity(BigVec3(Bigint(), Bigint(), Bigint())), acceleration(BigVec3(Bigint(), Bigint(), Bigint()))
 {
     this->backend = backend;
     if (emissionIntensity != 0.0f)
@@ -93,8 +94,7 @@ glm::mat4 RenderObject::getModelMatrix() const
     glm::mat4 model = glm::mat4(1.0f);
 
     // converts the position to be local to the camera
-    glm::vec3 relativePos = camera->convertToLocal(position);
-    model = glm::translate(model, relativePos);
+    model = glm::translate(model, tempLocalPosition.toFloatVec3());
 
     // rotates the model
     model = glm::rotate(model, rotation.x, glm::vec3(1, 0, 0));
@@ -130,6 +130,14 @@ float RenderObject::nearCullFunction() const
     return near <= 0.1f ? 0.0f : 100.0f;
 }
 
+float RenderObject::calculateInverseSquareLaw(float intensity) const
+{
+    return (Bigint(intensity) / (tempLocalPosition.x * tempLocalPosition.x +
+                                 tempLocalPosition.y * tempLocalPosition.y +
+                                 tempLocalPosition.z * tempLocalPosition.z))
+        .toFloat();
+}
+
 void RenderObject::addVarsToShader()
 {
     glm::mat4 matrix = getModelMatrix();
@@ -137,11 +145,12 @@ void RenderObject::addVarsToShader()
     backend->includeMat4("uView", camera->getViewMatrix());
     backend->includeMat4("uProjection", camera->getProjectionMatrix(near, far));
     backend->includeFloat("u_CullRadius", nearCullFunction());
+    backend->includeFloat("gamma", gamma);
 
     if (thisLight != nullptr)
     {
         backend->includeTripleFloat("emissionColor", thisLight->color.x, thisLight->color.y, thisLight->color.z);
-        backend->includeFloat("emissionIntensity", thisLight->intensity);
+        backend->includeFloat("emissionIntensity", calculateInverseSquareLaw(thisLight->intensity));
     }
     else
     {
@@ -149,25 +158,37 @@ void RenderObject::addVarsToShader()
         backend->includeFloat("emissionIntensity", 0.0f);
     }
 
-    backend->includeInt("numLights", allLights.size());
     int i = 0;
-    glm::vec3 temp;
+    glm::dvec3 temp;
+    BigVec3 bigTemp;
+    float newIntensity;
     for (const Light *l : allLights)
     {
-        temp = (l->position - position).toDoubleVec3();
-        if (!std::isinf(temp.x) && !std::isinf(temp.y) && !std::isinf(temp.z))
+        if (l != thisLight)
         {
-            glm::dvec3 lightPos = glm::normalize(temp);
-            backend->includeTripleFloat("lightPositions[" + std::to_string(i) + "]", lightPos.x, lightPos.y, lightPos.z);
-            backend->includeTripleFloat("lightColors[" + std::to_string(i) + "]", l->color.x, l->color.y, l->color.z);
-            backend->includeFloat("lightIntensities[" + std::to_string(i) + "]", l->intensity);
-            i++;
+            bigTemp = l->position - position;
+            temp = bigTemp.toDoubleVec3();
+            if (!std::isinf(temp.x) && !std::isinf(temp.y) && !std::isinf(temp.z))
+            {
+                glm::dvec3 lightPos = glm::normalize(temp);
+                newIntensity = (Bigint(l->intensity) / (bigTemp.x * bigTemp.x +
+                                                        bigTemp.y * bigTemp.y +
+                                                        bigTemp.z * bigTemp.z))
+                                   .toFloat();
+                backend->includeTripleFloat("lightPositions[" + std::to_string(i) + "]", lightPos.x, lightPos.y, lightPos.z);
+                backend->includeTripleFloat("lightColors[" + std::to_string(i) + "]", l->color.x, l->color.y, l->color.z);
+                backend->includeFloat("lightIntensities[" + std::to_string(i) + "]", newIntensity);
+                i++;
+            }
         }
     }
+
+    backend->includeInt("numLights", i);
 }
 
 void RenderObject::Draw()
 {
+    tempLocalPosition = camera->convertToLocal(position);
     backend->includeShader(shader);
     addVarsToShader();
     backend->includeTexture(image);

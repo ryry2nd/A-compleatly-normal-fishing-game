@@ -23,9 +23,24 @@ public:
     static constexpr int SCALE = 100000; // fixed scale = 5 digits
     boost::multiprecision::cpp_int value;
 
-    Bigint(double d = 0.0)
+    Bigint()
+    {
+        value = boost::multiprecision::cpp_int();
+    }
+
+    Bigint(double d)
     {
         value = boost::multiprecision::cpp_int(static_cast<long long>(d * SCALE));
+    }
+
+    Bigint(float f)
+    {
+        value = boost::multiprecision::cpp_int(static_cast<long long>(f * SCALE));
+    }
+
+    Bigint(int i)
+    {
+        value = boost::multiprecision::cpp_int(static_cast<long long>(i * SCALE));
     }
 
     Bigint(const std::string &s)
@@ -63,6 +78,13 @@ public:
         return result;
     }
 
+    Bigint operator/(const Bigint &other) const
+    {
+        Bigint result;
+        result.value = (value * SCALE) / other.value;
+        return result;
+    }
+
     void operator+=(const Bigint &other)
     {
         *this = *this + other;
@@ -76,6 +98,11 @@ public:
     void operator*=(const Bigint &other)
     {
         *this = *this * other;
+    }
+
+    void operator/=(const Bigint &other)
+    {
+        *this = *this / other;
     }
 
     bool isZero() const
