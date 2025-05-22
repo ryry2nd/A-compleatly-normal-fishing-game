@@ -10,6 +10,7 @@ find_package(SDL2 REQUIRED)
 find_package(SDL2_IMAGE REQUIRED SDL2_image)
 find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(Boost REQUIRED)
 pkg_check_modules(GLEW REQUIRED glew)
 pkg_check_modules(SDL2_IMAGE REQUIRED SDL2_image)
 
@@ -30,6 +31,8 @@ link_directories(
 add_subdirectory( src/engine )
 add_subdirectory( src/game )
 
+include_directories(${Boost_INCLUDE_DIRS})
+
 # Executable
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME}
@@ -37,6 +40,7 @@ target_link_libraries(${PROJECT_NAME}
     ${SDL2_IMAGE_LIBRARIES} # SDL images
     OpenGL::GL              # Linking OpenGL
     ${GLEW_LIBRARIES}       # GLEW linking
+    ${Boost_LIBRARIES}   # Boost linking
     engine
     game
 )

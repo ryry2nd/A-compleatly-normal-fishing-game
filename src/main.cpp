@@ -40,9 +40,9 @@ int main(int argc, char *argv[])
     std::vector<RenderObject *> renderObjects;
 
     // uuhhh, this is for fun, in case i want to make things a googl meters apart, put whatever number here, see what happens, its pritty cool
-    std::string pos = "1";
+    std::string pos = "0";
 
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < 0; i++)
     {
         pos += "0";
     }
@@ -58,13 +58,17 @@ int main(int argc, char *argv[])
     // makes the cubes
     RenderObject cube(new OpenGlBackend(), shader, image, &camera);
     cube.position.x += Bigint(pos);
+    // cube.velocity.z = 5;
     renderObjects.push_back(&cube);
 
     RenderObject cube2(new OpenGlBackend(), shader, image, &camera);
+    cube2.position.x += Bigint(pos);
+    cube2.position.x -= Bigint(10);
     renderObjects.push_back(&cube2);
 
     RenderObject cube3(new OpenGlBackend(), shader, image, &camera, glm::vec3(1.0f), 1.0f);
     renderObjects.push_back(&cube3);
+    cube3.position.x += Bigint(pos);
     cube3.position.x += Bigint("100");
 
     // starts running the game loop

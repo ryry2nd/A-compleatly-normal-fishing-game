@@ -6,6 +6,8 @@ struct BigVec3
 {
     Bigint x, y, z;
 
+    BigVec3() : x(Bigint(0)), y(Bigint(0)), z(Bigint(0)) {}
+
     BigVec3(Bigint x_, Bigint y_, Bigint z_)
         : x(x_), y(y_), z(z_) {}
 
@@ -23,6 +25,11 @@ struct BigVec3
         return BigVec3(x - other.x, y - other.y, z - other.z);
     }
 
+    BigVec3 operator*(const double &other) const
+    {
+        return BigVec3(x * other, y * other, z * other);
+    }
+
     void operator+=(const BigVec3 &other)
     {
         *this = *this + other;
@@ -31,6 +38,11 @@ struct BigVec3
     void operator-=(const BigVec3 &other)
     {
         *this = *this - other;
+    }
+
+    bool isZero() const
+    {
+        return x.isZero() && y.isZero() && z.isZero();
     }
 
     glm::vec3 toFloatVec3() const
@@ -53,6 +65,8 @@ struct BigVec3
 struct BigVec2
 {
     Bigint x, y;
+
+    BigVec2() : x(Bigint(0)), y(Bigint(0)) {}
 
     BigVec2(Bigint x, Bigint y)
         : x(x), y(y) {}

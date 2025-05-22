@@ -60,7 +60,7 @@ std::vector<float> makeTexturedCube(float size = 1.0f)
 std::vector<Light *> RenderObject::allLights;
 
 RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor, float emissionIntensity, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
-    : position(pos), rotation(rot), scale(scl), shader(shady), image(im), camera(cam)
+    : position(pos), rotation(rot), scale(scl), shader(shady), image(im), camera(cam), velocity(BigVec3(Bigint(0), Bigint(0), Bigint(0))), acceleration(BigVec3(Bigint(0), Bigint(0), Bigint(0)))
 {
     this->backend = backend;
     if (emissionIntensity != 0.0f)
@@ -109,6 +109,16 @@ glm::mat4 RenderObject::getModelMatrix() const
 // I just made the default update to rotate all around
 void RenderObject::Update(float deltaTime)
 {
+
+    if (!velocity.isZero())
+    {
+        position += velocity * deltaTime;
+    }
+    if (!acceleration.isZero())
+    {
+        velocity += acceleration * deltaTime;
+    }
+
     rotation.y -= deltaTime;
     rotation.x -= deltaTime;
     rotation.z -= deltaTime;
@@ -122,7 +132,8 @@ float RenderObject::nearCullFunction() const
 
 void RenderObject::addVarsToShader()
 {
-    backend->includeMat4("uModel", getModelMatrix());
+    glm::mat4 matrix = getModelMatrix();
+    backend->includeMat4("uModel", matrix);
     backend->includeMat4("uView", camera->getViewMatrix());
     backend->includeMat4("uProjection", camera->getProjectionMatrix(near, far));
     backend->includeFloat("u_CullRadius", nearCullFunction());
@@ -140,13 +151,18 @@ void RenderObject::addVarsToShader()
 
     backend->includeInt("numLights", allLights.size());
     int i = 0;
+    glm::vec3 temp;
     for (const Light *l : allLights)
     {
-        glm::dvec3 lightPos = glm::normalize((l->position - position).toDoubleVec3());
-        backend->includeTripleFloat("lightPositions[" + std::to_string(i) + "]", lightPos.x, lightPos.y, lightPos.z);
-        backend->includeTripleFloat("lightColors[" + std::to_string(i) + "]", l->color.x, l->color.y, l->color.z);
-        backend->includeFloat("lightIntensities[" + std::to_string(i) + "]", l->intensity);
-        i++;
+        temp = (l->position - position).toDoubleVec3();
+        if (!std::isinf(temp.x) && !std::isinf(temp.y) && !std::isinf(temp.z))
+        {
+            glm::dvec3 lightPos = glm::normalize(temp);
+            backend->includeTripleFloat("lightPositions[" + std::to_string(i) + "]", lightPos.x, lightPos.y, lightPos.z);
+            backend->includeTripleFloat("lightColors[" + std::to_string(i) + "]", l->color.x, l->color.y, l->color.z);
+            backend->includeFloat("lightIntensities[" + std::to_string(i) + "]", l->intensity);
+            i++;
+        }
     }
 }
 
