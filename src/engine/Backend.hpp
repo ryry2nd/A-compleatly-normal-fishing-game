@@ -18,6 +18,7 @@ public:
     virtual void includeMat4(const std::string &name, const glm::mat4 &mat) = 0;
     virtual void includeTripleFloat(const std::string &location, const float f1, const float f2, const float f3) = 0;
     virtual void includeInt(const std::string &location, const int i) = 0;
+    virtual void includeBool(const std::string &location, const bool b) = 0;
 
 protected:
     Shader *shader = nullptr;

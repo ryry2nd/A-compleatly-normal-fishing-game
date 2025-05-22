@@ -85,6 +85,11 @@ public:
         glUniform1i(glGetUniformLocation(shader->getShader(), location.c_str()), i);
     }
 
+    void includeBool(const std::string &location, const bool b)
+    {
+        glUniform1i(glGetUniformLocation(shader->getShader(), location.c_str()), b);
+    }
+
     void finalizeShaders(const std::vector<float> &vertices)
     {
         int floatsPerVertex = 5;

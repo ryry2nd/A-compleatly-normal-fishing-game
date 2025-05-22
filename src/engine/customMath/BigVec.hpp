@@ -25,9 +25,34 @@ struct BigVec3
         return BigVec3(x - other.x, y - other.y, z - other.z);
     }
 
-    BigVec3 operator*(const double &other) const
+    BigVec3 operator*(const BigVec3 &other) const
+    {
+        return BigVec3(x * other.x, y * other.y, z * other.z);
+    }
+
+    BigVec3 operator/(const BigVec3 &other) const
+    {
+        return BigVec3(x / other.x, y / other.y, z / other.z);
+    }
+
+    BigVec3 operator+(const Bigint &other) const
+    {
+        return BigVec3(x + other, y + other, z + other);
+    }
+
+    BigVec3 operator-(const Bigint &other) const
+    {
+        return BigVec3(x - other, y - other, z - other);
+    }
+
+    BigVec3 operator*(const Bigint &other) const
     {
         return BigVec3(x * other, y * other, z * other);
+    }
+
+    BigVec3 operator/(const Bigint &other) const
+    {
+        return BigVec3(x / other, y / other, z / other);
     }
 
     void operator+=(const BigVec3 &other)
@@ -38,6 +63,36 @@ struct BigVec3
     void operator-=(const BigVec3 &other)
     {
         *this = *this - other;
+    }
+
+    void operator*=(const BigVec3 &other)
+    {
+        *this = *this * other;
+    }
+
+    void operator/=(const BigVec3 &other)
+    {
+        *this = *this / other;
+    }
+
+    void operator+=(const Bigint &other)
+    {
+        *this = *this + other;
+    }
+
+    void operator-=(const Bigint &other)
+    {
+        *this = *this - other;
+    }
+
+    void operator*=(const Bigint &other)
+    {
+        *this = *this * other;
+    }
+
+    void operator/=(const Bigint &other)
+    {
+        *this = *this / other;
     }
 
     bool isZero() const

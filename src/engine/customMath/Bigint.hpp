@@ -43,6 +43,11 @@ public:
         value = boost::multiprecision::cpp_int(static_cast<long long>(i * SCALE));
     }
 
+    Bigint(long l)
+    {
+        value = boost::multiprecision::cpp_int(static_cast<long long>(l * SCALE));
+    }
+
     Bigint(const std::string &s)
     {
         size_t dot = s.find('.');
@@ -110,32 +115,32 @@ public:
         return value.is_zero();
     }
 
-    bool operator<(const Bigint &other)
+    bool operator<(const Bigint &other) const
     {
         return value < other.value;
     }
 
-    bool operator>(const Bigint &other)
+    bool operator>(const Bigint &other) const
     {
         return value < other.value;
     }
 
-    bool operator==(const Bigint &other)
+    bool operator==(const Bigint &other) const
     {
         return value == other.value;
     }
 
-    bool operator!=(const Bigint &other)
+    bool operator!=(const Bigint &other) const
     {
         return value != other.value;
     }
 
-    bool operator<=(const Bigint &other)
+    bool operator<=(const Bigint &other) const
     {
         return value <= other.value;
     }
 
-    bool operator>=(const Bigint &other)
+    bool operator>=(const Bigint &other) const
     {
         return value >= other.value;
     }

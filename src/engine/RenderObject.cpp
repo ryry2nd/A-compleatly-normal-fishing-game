@@ -58,10 +58,12 @@ std::vector<float> makeTexturedCube(float size = 1.0f)
 }
 
 std::vector<Light *> RenderObject::allLights;
-float RenderObject::gamma = 2.2f;
+float RenderObject::gamma = 2.5f;
+bool RenderObject::disableBrightness = false;
 
-RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor, float emissionIntensity, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
-    : position(pos), rotation(rot), scale(scl), shader(shady), image(im), camera(cam), velocity(BigVec3(Bigint(), Bigint(), Bigint())), acceleration(BigVec3(Bigint(), Bigint(), Bigint()))
+RenderObject::RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor, Bigint emissionIntensity, BigVec3 pos, glm::vec3 rot, glm::vec3 scl)
+    : position(pos),
+      rotation(rot), scale(scl), shader(shady), image(im), camera(cam), velocity(BigVec3(Bigint(), Bigint(), Bigint())), acceleration(BigVec3(Bigint(), Bigint(), Bigint()))
 {
     this->backend = backend;
     if (emissionIntensity != 0.0f)
@@ -102,7 +104,7 @@ glm::mat4 RenderObject::getModelMatrix() const
     model = glm::rotate(model, rotation.z, glm::vec3(0, 0, 1));
 
     // scales the model
-    model = glm::scale(model, scale);
+    model = glm::scale(model, scale.toFloatVec3());
     return model;
 }
 
@@ -130,12 +132,11 @@ float RenderObject::nearCullFunction() const
     return near <= 0.1f ? 0.0f : 100.0f;
 }
 
-float RenderObject::calculateInverseSquareLaw(float intensity) const
+Bigint RenderObject::calculateInverseSquareLaw(Bigint intensity) const
 {
-    return (Bigint(intensity) / (tempLocalPosition.x * tempLocalPosition.x +
-                                 tempLocalPosition.y * tempLocalPosition.y +
-                                 tempLocalPosition.z * tempLocalPosition.z))
-        .toFloat();
+    return (intensity / (tempLocalPosition.x * tempLocalPosition.x +
+                         tempLocalPosition.y * tempLocalPosition.y +
+                         tempLocalPosition.z * tempLocalPosition.z));
 }
 
 void RenderObject::addVarsToShader()
@@ -146,11 +147,12 @@ void RenderObject::addVarsToShader()
     backend->includeMat4("uProjection", camera->getProjectionMatrix(near, far));
     backend->includeFloat("u_CullRadius", nearCullFunction());
     backend->includeFloat("gamma", gamma);
+    backend->includeBool("u_fullBright", disableBrightness);
 
     if (thisLight != nullptr)
     {
         backend->includeTripleFloat("emissionColor", thisLight->color.x, thisLight->color.y, thisLight->color.z);
-        backend->includeFloat("emissionIntensity", calculateInverseSquareLaw(thisLight->intensity));
+        backend->includeFloat("emissionIntensity", calculateInverseSquareLaw(thisLight->intensity).toFloat());
     }
     else
     {
@@ -171,9 +173,9 @@ void RenderObject::addVarsToShader()
             if (!std::isinf(temp.x) && !std::isinf(temp.y) && !std::isinf(temp.z))
             {
                 glm::dvec3 lightPos = glm::normalize(temp);
-                newIntensity = (Bigint(l->intensity) / (bigTemp.x * bigTemp.x +
-                                                        bigTemp.y * bigTemp.y +
-                                                        bigTemp.z * bigTemp.z))
+                newIntensity = (l->intensity / (bigTemp.x * bigTemp.x +
+                                                bigTemp.y * bigTemp.y +
+                                                bigTemp.z * bigTemp.z))
                                    .toFloat();
                 backend->includeTripleFloat("lightPositions[" + std::to_string(i) + "]", lightPos.x, lightPos.y, lightPos.z);
                 backend->includeTripleFloat("lightColors[" + std::to_string(i) + "]", l->color.x, l->color.y, l->color.z);

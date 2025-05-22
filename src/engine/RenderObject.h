@@ -15,13 +15,13 @@ struct Light
 {
     BigVec3 &position;
     glm::vec3 color;
-    float intensity;
+    Bigint intensity;
 };
 
 class RenderObject
 {
 public:
-    RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor = glm::vec3(0, 0, 0), float emissionIntensity = 0.0f, BigVec3 pos = BigVec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scl = glm::vec3(1.0f));
+    RenderObject(Backend *backend, Shader *shady, Image *im, Camera *cam, glm::vec3 emissionColor = glm::vec3(0, 0, 0), Bigint emissionIntensity = Bigint(), BigVec3 pos = BigVec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scl = glm::vec3(1.0f));
     ~RenderObject();
 
     void Update(float deltaTime);
@@ -29,7 +29,7 @@ public:
 
     BigVec3 position;
     glm::vec3 rotation;
-    glm::vec3 scale;
+    BigVec3 scale;
 
     BigVec3 velocity;
     BigVec3 acceleration;
@@ -39,6 +39,7 @@ public:
     float far = 10000.0f;
 
     static float gamma;
+    static bool disableBrightness;
 
 protected:
     void
@@ -56,7 +57,7 @@ private:
     Camera *camera;
     Light *thisLight = nullptr;
     std::vector<float> vertices;
-    float calculateInverseSquareLaw(float intensity) const;
+    Bigint calculateInverseSquareLaw(Bigint intensity) const;
 
     static std::vector<Light *> allLights;
 };
