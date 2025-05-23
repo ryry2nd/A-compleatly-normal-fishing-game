@@ -132,11 +132,18 @@ float RenderObject::nearCullFunction() const
     return near <= 0.1f ? 0.0f : 100.0f;
 }
 
-Bigint RenderObject::calculateInverseSquareLaw(Bigint intensity) const
+Bigint RenderObject::calculateInverseSquareLaw(const BigVec3 &subtractedPos, const Bigint &intensity) const
 {
-    return (intensity / (tempLocalPosition.x * tempLocalPosition.x +
-                         tempLocalPosition.y * tempLocalPosition.y +
-                         tempLocalPosition.z * tempLocalPosition.z));
+    if (subtractedPos.x == 0 && subtractedPos.y == 0 && subtractedPos.z == 0)
+        return Bigint(1);
+    return intensity / calculateDistanceSquared(subtractedPos);
+}
+
+Bigint RenderObject::calculateDistanceSquared(const BigVec3 &subtractedPos) const
+{
+    return subtractedPos.x * subtractedPos.x +
+           subtractedPos.y * subtractedPos.y +
+           subtractedPos.z * subtractedPos.z;
 }
 
 void RenderObject::addVarsToShader()
@@ -152,7 +159,7 @@ void RenderObject::addVarsToShader()
     if (thisLight != nullptr)
     {
         backend->includeTripleFloat("emissionColor", thisLight->color.x, thisLight->color.y, thisLight->color.z);
-        backend->includeFloat("emissionIntensity", calculateInverseSquareLaw(thisLight->intensity).toFloat());
+        backend->includeFloat("emissionIntensity", calculateInverseSquareLaw(tempLocalPosition, thisLight->intensity).toFloat());
     }
     else
     {
@@ -163,7 +170,6 @@ void RenderObject::addVarsToShader()
     int i = 0;
     glm::dvec3 temp;
     BigVec3 bigTemp;
-    float newIntensity;
     for (const Light *l : allLights)
     {
         if (l != thisLight)
@@ -173,13 +179,9 @@ void RenderObject::addVarsToShader()
             if (!std::isinf(temp.x) && !std::isinf(temp.y) && !std::isinf(temp.z))
             {
                 glm::dvec3 lightPos = glm::normalize(temp);
-                newIntensity = (l->intensity / (bigTemp.x * bigTemp.x +
-                                                bigTemp.y * bigTemp.y +
-                                                bigTemp.z * bigTemp.z))
-                                   .toFloat();
                 backend->includeTripleFloat("lightPositions[" + std::to_string(i) + "]", lightPos.x, lightPos.y, lightPos.z);
                 backend->includeTripleFloat("lightColors[" + std::to_string(i) + "]", l->color.x, l->color.y, l->color.z);
-                backend->includeFloat("lightIntensities[" + std::to_string(i) + "]", newIntensity);
+                backend->includeFloat("lightIntensities[" + std::to_string(i) + "]", calculateInverseSquareLaw(bigTemp, l->intensity).toFloat());
                 i++;
             }
         }

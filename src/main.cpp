@@ -9,6 +9,18 @@
 #include <string>
 #include <memory>
 
+class Sun : public RenderObject
+{
+public:
+    Sun(Shader *shader, Image *image, Camera *camera)
+        : RenderObject(new OpenGlBackend(), shader, image, camera, glm::vec3(1.0f), Bigint("384600000000000000000000000"))
+    {
+        scale *= Bigint("150000000000");
+        near = 100000;
+        far = 1000000000000;
+    }
+};
+
 int main(int argc, char *argv[])
 {
     // it initialises sdl
@@ -48,28 +60,31 @@ int main(int argc, char *argv[])
     }
 
     // this is the camera, cameras are neat
-    Camera camera(RES, Bigint(pos), 0.0f, -2.0f);
+    Camera *camera = new Camera(RES, Bigint(pos), 0.0f, -2.0f);
     float speed = 10;
 
     // this sets up the shader and texture
-    Shader *shader = new ShaderOpenGl("assets/shaders/cubeVertex.glsl", "assets/shaders/cubeFragment.glsl");
+    Shader *shader = new ShaderOpenGl("assets/shaders/nearVertex.glsl", "assets/shaders/nearFragment.glsl");
     Image *image = new ImageOpenGl("assets/textures/FISH.png");
 
     // makes the cubes
-    RenderObject cube(new OpenGlBackend(), shader, image, &camera);
-    cube.position.x += Bigint(pos);
+    RenderObject cube(new OpenGlBackend(), shader, image, camera);
     // cube.velocity.z = 5;
     renderObjects.push_back(&cube);
 
-    RenderObject cube2(new OpenGlBackend(), shader, image, &camera);
-    cube2.position.x += Bigint(pos);
+    cube.disableBrightness = true;
+
+    RenderObject cube2(new OpenGlBackend(), shader, image, camera);
     cube2.position.x -= Bigint(10);
     renderObjects.push_back(&cube2);
 
-    RenderObject cube3(new OpenGlBackend(), shader, image, &camera, glm::vec3(1.0f), 10.0f);
+    RenderObject cube3(new OpenGlBackend(), shader, image, camera, glm::vec3(1.0f), 10.0f);
     renderObjects.push_back(&cube3);
-    cube3.position.x += Bigint(pos);
     cube3.position.x += Bigint("10");
+
+    Sun sun(shader, image, camera);
+    renderObjects.push_back(&sun);
+    sun.position.x -= Bigint("150000000000"); // Bigint("21392000000");
 
     // starts running the game loop
     bool running = true;
@@ -97,8 +112,8 @@ int main(int argc, char *argv[])
             // rotates camera
             if (event.type == SDL_MOUSEMOTION)
             {
-                camera.yaw -= event.motion.xrel * deltaTime * MOUSE_SENSITIVITY;
-                camera.pitch -= event.motion.yrel * deltaTime * MOUSE_SENSITIVITY;
+                camera->yaw -= event.motion.xrel * deltaTime * MOUSE_SENSITIVITY;
+                camera->pitch -= event.motion.yrel * deltaTime * MOUSE_SENSITIVITY;
             }
 
             // when you press escape, leave
@@ -121,35 +136,35 @@ int main(int argc, char *argv[])
         // movement
         if (keystates[SDL_SCANCODE_W])
         {
-            glm::vec3 forward = camera.getForwardVector();
-            camera.position += (forward * deltaTime * speed);
+            glm::vec3 forward = camera->getForwardVector();
+            camera->position += (forward * deltaTime * speed);
         }
         if (keystates[SDL_SCANCODE_S])
         {
-            glm::vec3 forward = camera.getForwardVector();
-            camera.position -= (forward * deltaTime * speed);
+            glm::vec3 forward = camera->getForwardVector();
+            camera->position -= (forward * deltaTime * speed);
         }
 
         if (keystates[SDL_SCANCODE_D])
         {
-            glm::vec3 right = camera.getRightVector();
-            camera.position += (right * deltaTime * speed);
+            glm::vec3 right = camera->getRightVector();
+            camera->position += (right * deltaTime * speed);
         }
         if (keystates[SDL_SCANCODE_A])
         {
-            glm::vec3 right = camera.getRightVector();
-            camera.position -= (right * deltaTime * speed);
+            glm::vec3 right = camera->getRightVector();
+            camera->position -= (right * deltaTime * speed);
         }
 
         if (keystates[SDL_SCANCODE_SPACE])
         {
-            glm::vec3 down = camera.getDownVector();
-            camera.position -= (down * deltaTime * speed);
+            glm::vec3 down = camera->getDownVector();
+            camera->position -= (down * deltaTime * speed);
         }
         if (keystates[SDL_SCANCODE_LCTRL])
         {
-            glm::vec3 down = camera.getDownVector();
-            camera.position += (down * deltaTime * speed);
+            glm::vec3 down = camera->getDownVector();
+            camera->position += (down * deltaTime * speed);
         }
 
         // update all objects
@@ -175,5 +190,6 @@ int main(int argc, char *argv[])
     delete shader;
     delete image;
     delete renderingEngine;
+    delete camera;
     return 0;
 }

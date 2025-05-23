@@ -57,7 +57,8 @@ private:
     Camera *camera;
     Light *thisLight = nullptr;
     std::vector<float> vertices;
-    Bigint calculateInverseSquareLaw(Bigint intensity) const;
+    Bigint calculateInverseSquareLaw(const BigVec3 &subtractedPos, const Bigint &intensity) const;
+    Bigint calculateDistanceSquared(const BigVec3 &subtractedPos) const;
 
     static std::vector<Light *> allLights;
 };
